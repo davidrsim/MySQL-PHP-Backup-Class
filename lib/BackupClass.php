@@ -65,7 +65,7 @@ class DbBackup {
 	* @access private
 	* @see enableS3Support(); executeBackup();
 	*/
-	private $transferToS3 = false;
+	private $s3Enabled = false;
 	
 	
 	/** 
@@ -162,7 +162,7 @@ class DbBackup {
 											3- bucketName");
 			}
 			
-			$this->transferToS3 = true;
+			$this->s3Enabled = true;
 		}
 	}
 	
@@ -227,7 +227,7 @@ class DbBackup {
 		$this->dbObject->close();
 		
 		//Transfer the compressed file to Amazon S3 storage (If asked to)
-		if($this->transferToS3){
+		if($this->s3Enabled){
 			$this->transferToAmazon();
 		}
 	}
@@ -247,12 +247,13 @@ class DbBackup {
 			//Get the Lastest backup from all archieves found
 			$backupFile = end($dumpedArchives);
 		}else{
-			//Will try to fetch the data from amazon S3 Storage here			
-			$backupFile = "";
+			if($this->s3Enabled){
+				$backupFile = $this->getBackupFileFromS3();
+			}		
 		}
 		
 		//Extract/Uncompress the backup file
-		if(!empty($backupFile)){
+		if(isset($backupFile) && !empty($backupFile)){
 			$this->createNewClassDirectory("restore");
 			system("tar xf " . $backupFile . " -C ".$this->folderName);
 
@@ -268,6 +269,34 @@ class DbBackup {
 	}
 	
 	
+	/** 
+	* Finds the latest Backup archieve file from the Amazon S3 Bucket
+	*
+	* @return String
+	* @access private
+	* @see executeRestore()
+	*
+	*/
+	
+	private function getBackupFileFromS3(){
+		require_once('S3.php');
+		
+		//Create a new Instance of the S3 Object
+		$s3 = new S3($this->s3Config['accessKey'], $this->s3Config['secretKey'], false);
+		$bucketContent = $s3->getBucket($this->s3Config['bucketName'], $this->databaseVars['database_name'] . "_backup");
+		
+		if(!empty($bucketContent)){
+			end($bucketContent);
+			$keyname = key($bucketContent);
+			
+			// Save object to a file.
+			$file = $s3->getObject($this->s3Config['bucketName'],$keyname,$this->backupDir . '/S3_' . $keyname);
+			
+			return $this->backupDir . '/S3_' . $keyname;
+		}else{
+			return NULL;
+		}
+	}
 	
 	
 	/** 
