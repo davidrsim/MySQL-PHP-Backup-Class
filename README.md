@@ -2,6 +2,12 @@ MySQL Backup Class
 ==================
 This project provides a useful tool (PHP Class) to backup any MySQL database automatically with Optional Amazon S3 Support.
 
+# Requirements
+	- PHP 5+
+	- MySQL 4.1+
+	- A writable (CHMOD 0777) backup directory on the server
+	- Amazon S3 Account (Optional)
+
 # Features
 	- Backup the whole database (All Tables) in one single file
 	- Backup each DB table in a seperate SQL Dump File
