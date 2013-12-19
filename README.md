@@ -9,6 +9,7 @@ This project provides a useful tool (PHP Class) to backup any MySQL database aut
 	- Backup data on Amazon S3 (Optional)
 	- Allows custom dump options
 	- Restore the whole database on the fly (Runs Once)
+	- Reads the backup file from Amazon S3 Storage if the local copy isn't available (in restore)
 
 # Currently Working On:
 
@@ -16,7 +17,6 @@ This project provides a useful tool (PHP Class) to backup any MySQL database aut
 	2. Validate user provided settings (DB Login and Amazon S3 Keys)   
 	3. Validating user added dump options  (within the 'addDumpOption' Method)   
 	4. Creating the automatic scheduling of the backup process (CronJobs Creator)
-	5. Read Backup from Amazon S3 Storage if the local copy isn't available (in restore)
 
 Code Examples
 =============
@@ -75,16 +75,22 @@ Code Examples
 ?>
 ```
 
-#### Basic Restore Usage
+#### Basic Restore Usage (With AWS S3 Support)
 ```php
 <?php
 	require_once('lib/BackupClass.php');
+	
 	$dbConfig = array('host' => 'localhost',
 					  'login' => '{DBUsername}',
 					  'password' => '{DBPassword}',
 					  'database_name' => '{DBName}');
 	
+	$amazonConfig = array('accessKey' => '{YOUR S3 ACCESS KEY}',
+				 	  'secretKey' =>  '{Your S3 Secret Key}',
+				  	  'bucketName' => '{Your Bucket}');
+	
 	$dbBackupObj = new DbBackup($dbConfig);
+	$dbBackupObj->enableS3Support($amazonConfig);
 	$dbBackupObj->executeRestore();
 ?>
 ```
