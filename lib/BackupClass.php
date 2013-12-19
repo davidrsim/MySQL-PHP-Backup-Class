@@ -1,9 +1,9 @@
 <?php
 /** 
-* MySQL database backup class
+* MySQL Database Backup Class
 *
 * @author Ayman R. Bedair <http://www.AymanRB.com>
-* @version 0.1.2-beta
+* @version 0.1.5-beta
 * @access public
 *
 */
@@ -84,6 +84,7 @@ class DbBackup {
 	* @return void
 	* 
 	*/							
+	
 	public function __construct(Array $dbConfigVars, Array $S3ConfigVars = NULL){
 		
 		//Just to make sure the user provided all Database Connection fields
@@ -132,7 +133,6 @@ class DbBackup {
 		return $this->dbObject->query('SHOW TABLES;');
 	}
 	
-	
 	/** 
 	* Enables Amazon Cloud Storage - S3 - Suport and sets the settings (Should be called before Executing the backup)
 	*
@@ -167,12 +167,69 @@ class DbBackup {
 	}
 	
 	/** 
+	* Add one or more tables to be excluded from the backup process
+	*
+	* @param string $tableName One or more table names to exclude
+	* @return void
+	* @access public
+	*
+	*/
+	
+	public function excludeTable(){
+		$num_args = func_num_args();
+		
+	    if ($num_args >= 1) {
+	        $args = func_get_args();
+			
+			$this->excludeTables = array_merge($this->excludeTables,$args);
+	    }else{
+	    	throw new Exception("You need to provide at least one table name to be excluded.");
+	    }
+	}
+	
+	/** 
+	* Add one or more dump option to the default options
+	*
+	* @param string $dumpOption One or more dump options used in execution
+	* @return void
+	* @access public
+	*
+	*/
+	
+	public function addDumpOption(){
+		//Get the number of supplied arguments / parameters to this method
+		$num_args = func_num_args();
+		
+	    if ($num_args >= 1) {//Make sure at least one argument / parameter was provided
+	    
+	        //Fetch all provided parametes into an array
+	        $args = func_get_args();
+			
+			foreach($args as $arg){
+				$arg = trim($arg); //Just to keep the submitted option clear of side whitespaces
+				
+				if(strpos($this->dumpOptions, $arg) === false){ //make sure it was not already in the dumpOptions var
+						
+					if(strpos($arg, "--") === false){ //add proceeding dashes if the user missed 'em
+						$arg = "--".$arg;
+					}
+					//Append it to the dumpOptions var
+					$this->dumpOptions .= " ".$arg;
+				}				
+			}
+	    }else{
+	    	throw new Exception("You need to provide at least one dump option to be added.");
+	    }
+	}
+	
+	/** 
 	* Executes the backup process itself and creates SQL Dumps in the folder
 	*
 	* @return void
 	* @access public
 	*
 	*/
+	
 	public function executeBackup(){
 		//Prepare a new Empty directory to hold up the backup files
 		$this->createNewClassDirectory("backup");
@@ -200,14 +257,14 @@ class DbBackup {
 		$this->finalizeBackup();
 	}
 	
-	
-		/** 
+	/** 
 	* Compresses generated dump file(s), deletes raw sql file(s) and closes all opened connection
 	*
 	* @return void
 	* @access private
 	*
 	*/
+	
 	private function finalizeBackup(){
 		$currentWD = getcwd();
 		
@@ -232,7 +289,6 @@ class DbBackup {
 		}
 	}
 	
-	
 	/** 
 	* Executes the backup restore process from dumped files
 	*
@@ -240,6 +296,7 @@ class DbBackup {
 	* @access public
 	*
 	*/
+	
 	public function executeRestore(){
 		//Fetch all local backup files available		
 		$dumpedArchives = glob($this->backupDir . '/' . $this->databaseVars['database_name'] . "_backup_*");
@@ -298,7 +355,6 @@ class DbBackup {
 		}
 	}
 	
-	
 	/** 
 	* Sets the directory for the backup files
 	*
@@ -309,6 +365,7 @@ class DbBackup {
 	* @see createDir()
 	*
 	*/
+	
 	public function setBackupDirectory($directory_path,$force_create = true){
 		//if directory doesn't exist attempt to create it after checking the $force_create param 
 		if(!is_dir($directory_path)){
@@ -337,7 +394,6 @@ class DbBackup {
 			throw new Exception("<h3>Failed to create Directroy:</h3> '<b>".$directory_path."</b>' !");
 		}
 	}
-	
 	
 	/** 
 	* Removes directory and all its contents recursively 
@@ -384,6 +440,7 @@ class DbBackup {
 	* @access private
 	*
 	*/
+	
 	private function createNewClassDirectory($classSubject = "backup"){
 		$folder_name = $this->databaseVars['database_name']."_".$classSubject."_".date('Y-m-d_H-i-s');
 		mkdir($this->backupDir."/".$folder_name);
@@ -398,6 +455,7 @@ class DbBackup {
 	* @access private
 	*
 	*/
+	
 	public function setDumpType($type){
 		switch($type){
 			case 1:
@@ -411,7 +469,6 @@ class DbBackup {
 		}
 	}
 	
-	
 	/** 
 	* Transfers the Compressed Backup file to Amazon S3
 	*
@@ -419,6 +476,7 @@ class DbBackup {
 	* @access private
 	*
 	*/
+	
 	private function transferToAmazon(){
 		require_once('S3.php');
 		
@@ -432,61 +490,5 @@ class DbBackup {
 		} else {
 			throw new Exception("S3::putObjectFile(): Failed to copy file");
 		}
-	}
-	
-	
-	/** 
-	* Add one or more tables to be excluded from the backup process
-	*
-	* @param string $tableName One or more table names to exclude
-	* @return void
-	* @access public
-	*
-	*/
-	public function excludeTable(){
-		$num_args = func_num_args();
-		
-	    if ($num_args >= 1) {
-	        $args = func_get_args();
-			
-			$this->excludeTables = array_merge($this->excludeTables,$args);
-	    }else{
-	    	throw new Exception("You need to provide at least one table name to be excluded.");
-	    }
-	}
-	
-	
-	/** 
-	* Add one or more dump option to the default options
-	*
-	* @param string $dumpOption One or more dump options used in execution
-	* @return void
-	* @access public
-	*
-	*/
-	public function addDumpOption(){
-		//Get the number of supplied arguments / parameters to this method
-		$num_args = func_num_args();
-		
-	    if ($num_args >= 1) {//Make sure at least one argument / parameter was provided
-	    
-	        //Fetch all provided parametes into an array
-	        $args = func_get_args();
-			
-			foreach($args as $arg){
-				$arg = trim($arg); //Just to keep the submitted option clear of side whitespaces
-				
-				if(strpos($this->dumpOptions, $arg) === false){ //make sure it was not already in the dumpOptions var
-						
-					if(strpos($arg, "--") === false){ //add proceeding dashes if the user missed 'em
-						$arg = "--".$arg;
-					}
-					//Append it to the dumpOptions var
-					$this->dumpOptions .= " ".$arg;
-				}				
-			}
-	    }else{
-	    	throw new Exception("You need to provide at least one dump option to be added.");
-	    }
 	}
 }
