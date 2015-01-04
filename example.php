@@ -4,28 +4,28 @@ require_once('lib/BackupClass.php');
 <h1>Example of a DB Backup File</h1>
 <?php
 //Database Configurations Array
-$dbConfig = array('host' => 'localhost',
-					  'login' => '{DBUsername}',
-					  'password' => '{DBPassword}',
-					  'database_name' => '{DBName}');
-	
+$config = array('host' => 'localhost',
+                'login' => '{DBUsername}',
+                'password' => '{DBPassword}',
+                'database_name' => '{DBName}');
+
 //Amazon S3 Configurations Array (Optional)
 $amazonConfig = array('accessKey' => '{YOUR S3 ACCESS KEY}',
 				 	  'secretKey' =>  '{Your S3 Secret Key}',
 				  	  'bucketName' => '{Your Bucket}');
-					  
+
 /*
  * Example 1: Very Basic Backup Example
  */
 
-$dbBackupObj = new DbBackup($dbConfig);
+$dbBackupObj = new DbBackup($config);
 $dbBackupObj->executeBackup();
 
 /*
  * Example 2: Extended Backup
- */	
+ */
 try{
-	$dbBackupObj = new DbBackup($dbConfig);
+	$dbBackupObj = new DbBackup($config);
 	$dbBackupObj->setBackupDirectory('backups/extendedExample'); //CustomFolderName
 	$dbBackupObj->setDumpType(0); //To disable the single table files dumping (1 Dump file for the whole database)
 	$dbBackupObj->excludeTable('table1Name','tabel2Name','table3Name');	//Exclude few tables from your backup execution
@@ -40,7 +40,7 @@ try{
  * Example 3: Very Basic Restore Database Example
  */
  try{
-	$dbBackupObj = new DbBackup($dbConfig);
+	$dbBackupObj = new DbBackup($config);
 	$dbBackupObj->executeRestore();
 }catch(Exception $e){
 	echo $e->getMessage();
