@@ -453,13 +453,13 @@ class DbBackup {
     public function setDumpType($type) {
         switch($type) {
             case 1:
-                $dumpTableFiles = true;
+                $this->dumpTableFiles = true;
                 break;
             case 0:
-                $dumpTableFiles = false;
+                $this->dumpTableFiles = false;
                 break;
             default:
-                $dumpTableFiles = true;
+                $this->dumpTableFiles = true;
         }
     }
 
